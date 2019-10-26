@@ -1,0 +1,6 @@
+[submodule "allwpilib"]
+	path = allwpilib
+	url = https://github.com/wpilibsuite/allwpilib
+[submodule "ni-libraries"]
+	path = ni-libraries
+	url = https://github.com/wpilibsuite/ni-libraries
