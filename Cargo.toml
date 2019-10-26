@@ -1,0 +1,10 @@
+[package]
+name = "a-bot"
+version = "0.1.0"
+authors = ["wozeparrot"]
+edition = "2018"
+license = "BSD-3-Clause"
+description = "Asynchronous FRC Library"
+
+[dependencies]
+bindgen = "0.51.1"
