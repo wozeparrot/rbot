@@ -1,6 +1,6 @@
 [package]
 name = "a-bot"
-version = "0.1.0"
+version = "0.0.1"
 authors = ["wozeparrot"]
 edition = "2018"
 license = "BSD-3-Clause"
