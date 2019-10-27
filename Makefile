@@ -26,15 +26,21 @@ cp_headers: update_submod wpilib_compile
 	cp -R -v $(local_dir)allwpilib/hal/src/main/native/include/hal/ $(local_dir)headers/
 	cp -R -v $(local_dir)allwpilib/hal/build/generated/headers/hal/ $(local_dir)headers/
 
-	mkdir $(local_dir)headers/wpiutil/
-	cp -R -v $(local_dir)allwpilib/wpiutil/src/main/native/include/* $(local_dir)headers/wpiutil/
+	cp -R -v $(local_dir)allwpilib/wpiutil/src/main/native/include/* $(local_dir)headers/
 
-	mkdir $(local_dir)headers/ntcore/
-	cp -R -v $(local_dir)allwpilib/ntcore/src/main/native/include/* $(local_dir)headers/ntcore/
+	cp -R -v $(local_dir)allwpilib/ntcore/src/main/native/include/* $(local_dir)headers/
 
-	cp -R -v $(local_dir)ni-libraries/src/include/FRC_FPGA_ChipObject/ $(local_dir)headers/
-	cp -R -v $(local_dir)ni-libraries/src/include/FRC_NetworkCommunication/ $(local_dir)headers/
-	cp -R -v $(local_dir)ni-libraries/src/include/visa/ $(local_dir)headers/
+	cp -R -v $(local_dir)ni-libraries/src/include/FRC_FPGA_ChipObject/* $(local_dir)headers/
+	cp -R -v $(local_dir)ni-libraries/src/include/FRC_NetworkCommunication/* $(local_dir)headers/
+	cp -R -v $(local_dir)ni-libraries/src/include/visa/* $(local_dir)headers/
+
+	cd $(local_dir)headers/hal/; sed -e '/#include \"hal\/SimDevice\.h\"/s/^/\/\//g' -i HAL.h
+
+	python2 $(local_dir)get_frc_arm_gcc_header.py | xargs -I '{}' find '{}' -type d -name "gnu" | xargs -I '{}' cp -R '{}' $(local_dir)headers/
+	python2 $(local_dir)get_frc_arm_gcc_header.py | xargs -I '{}' find '{}' -type d -name "sys" | xargs -I '{}' cp -R '{}' $(local_dir)headers/
+	python2 $(local_dir)get_frc_arm_gcc_header.py | xargs -I '{}' find '{}' -type f -name "glob.h" | xargs dirname | xargs -I '{}' bash -c 'cp -R {}/*.h $(local_dir)headers/'
+	python2 $(local_dir)get_frc_arm_gcc_header.py | xargs -I '{}' find '{}' -type f -name "glob.h" | xargs dirname | xargs -I '{}' cp -R '{}/bits' $(local_dir)headers/
+	python2 $(local_dir)get_frc_arm_gcc_header.py | xargs -I '{}' find '{}' -type f -path "*/include/stddef.h" | xargs -I '{}' cp -R '{}' $(local_dir)headers/
 
 a-bot_clean: local_dir := $(local_dir)
 a-bot_clean:
