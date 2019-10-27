@@ -1,6 +1,6 @@
 local_dir := $(dir $(lastword $(MAKEFILE_LIST)))
 
-.PHONY: wpilib_compile cp_libs update_submod a-bot_clean wpilib_clean
+.PHONY: wpilib_compile cp_libs cp_headers update_submod a-bot_clean wpilib_clean ni_clean
 
 wpilib_compile: local_dir := $(local_dir)
 wpilib_compile: update_submod
@@ -21,6 +21,21 @@ cp_libs: wpilib_compile
 
 	cd $(local_dir)libs && bash -c 'pwd; for i in *.so.*; do mv -i "$$i" "$${i%.so.*}.so"; done'
 
+cp_headers: local_dir := $(local_dir)
+cp_headers: update_submod wpilib_compile
+	cp -R -v $(local_dir)allwpilib/hal/src/main/native/include/hal/ $(local_dir)headers/
+	cp -R -v $(local_dir)allwpilib/hal/build/generated/headers/hal/ $(local_dir)headers/
+
+	mkdir $(local_dir)headers/wpiutil/
+	cp -R -v $(local_dir)allwpilib/wpiutil/src/main/native/include/* $(local_dir)headers/wpiutil/
+
+	mkdir $(local_dir)headers/ntcore/
+	cp -R -v $(local_dir)allwpilib/ntcore/src/main/native/include/* $(local_dir)headers/ntcore/
+
+	cp -R -v $(local_dir)ni-libraries/src/include/FRC_FPGA_ChipObject/ $(local_dir)headers/
+	cp -R -v $(local_dir)ni-libraries/src/include/FRC_NetworkCommunication/ $(local_dir)headers/
+	cp -R -v $(local_dir)ni-libraries/src/include/visa/ $(local_dir)headers/
+
 a-bot_clean: local_dir := $(local_dir)
 a-bot_clean:
 	rm -rf $(local_dir)libs/*
@@ -30,5 +45,10 @@ wpilib_clean: local_dir := $(local_dir)
 wpilib_clean: update_submod
 	cd $(local_dir)allwpilib; ./gradlew clean
 
-clean: a-bot_clean
-clean: wpilib_clean
+ni_clean: local_dir := $(local_dir)
+ni_clean: update_submod
+	cd $(local_dir)ni-libraries; ./gradlew clean
+
+clean: a-bot_clean wpilib_clean ni_clean
+
+all: clean cp_libs cp_headers
