@@ -1,41 +1,18 @@
 use bindgen;
 use std::env;
+use std::path::*;
 
 fn main() {
     generate_bindings();
-    link_libs();
-}
-
-const LIB_DIR: &'static str = "libs";
-const LIB_LIST: &'static [&'static str] = &[
-    "FRC_NetworkCommunication",
-    "NiFpga",
-    "NiFpgaLv",
-    "niriodevenum",
-    "niriosession",
-    "NiRioSrv",
-    "RoboRIO_FRC_ChipObject",
-    "visa",
-    "wpiHal",
-    "wpiutil",
-];
-
-fn link_libs() {
-    for lib in LIB_LIST.iter() {
-        println!("cargo:rustc-link-lib=dylib={}", lib);
-    }
-
-    let path = env::current_dir().unwrap();
-    println!("cargo:rustc-link-search=native={}/{}", path.display(), LIB_DIR);
 }
 
 fn generate_bindings() {
-    const HEADER_DIR: &str = "headers";
+    const HEADER_DIR: &str = "../headers";
     const BLOCK_REGEX_1: &str = r"HAL_\w+";
     const BLOCK_REGEX_2: &str = r"HALUsageReporting::.*";
 
     let bindings = bindgen::Builder::default()
-        .header("HAL_wrapper.h")
+        .header("../HAL_wrapper.h")
         .whitelist_type(BLOCK_REGEX_1)
         .whitelist_function(BLOCK_REGEX_1)
         .whitelist_var(BLOCK_REGEX_1)

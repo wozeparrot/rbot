@@ -13,6 +13,8 @@ update_submod:
 
 cp_libs: local_dir := $(local_dir)
 cp_libs: wpilib_compile
+	mkdir $(local_dir)libs/
+
 	cp -v $(local_dir)allwpilib/hal/build/libs/hal/shared/linuxathena/release/*.so $(local_dir)libs/
 	cp -v $(local_dir)allwpilib/wpiutil/build/libs/wpiutil/shared/linuxathena/release/*.so $(local_dir)libs/
 	
@@ -23,6 +25,8 @@ cp_libs: wpilib_compile
 
 cp_headers: local_dir := $(local_dir)
 cp_headers: update_submod wpilib_compile
+	mkdir $(local_dir)headers/
+
 	cp -R -v $(local_dir)allwpilib/hal/src/main/native/include/hal/ $(local_dir)headers/
 	cp -R -v $(local_dir)allwpilib/hal/build/generated/headers/hal/ $(local_dir)headers/
 
