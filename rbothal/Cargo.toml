@@ -5,6 +5,7 @@ authors = ["wozeparrot"]
 edition = "2018"
 license = "BSD-3-Clause"
 description = "Rust FRC Library HAL"
+repository = "https://github.com/wozeparrot/rbot"
 
 [build-dependencies]
 bindgen = "0.51.1"
