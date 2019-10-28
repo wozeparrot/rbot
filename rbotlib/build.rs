@@ -2,6 +2,10 @@ use bindgen;
 use std::env;
 use std::path::*;
 
+fn rbot_dir() -> PathBuf {
+    PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap())
+}
+
 fn main() {
     link_libs();
 }
@@ -25,6 +29,5 @@ fn link_libs() {
         println!("cargo:rustc-link-lib=dylib={}", lib);
     }
 
-    let path = env::current_dir().unwrap();
-    println!("cargo:rustc-link-search=native={}/../{}", path.display(), LIB_DIR);
+    println!("cargo:rustc-link-search=native={}{}", rbot_dir().join("libs/").display(), LIB_DIR);
 }

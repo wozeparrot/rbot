@@ -2,22 +2,26 @@ use bindgen;
 use std::env;
 use std::path::*;
 
+fn rbot_dir() -> PathBuf {
+    PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap())
+}
+
 fn main() {
     generate_bindings();
 }
 
 fn generate_bindings() {
-    const HEADER_DIR: &str = "../headers";
+    const HEADER_DIR: &str = "headers";
     const BLOCK_REGEX_1: &str = r"HAL_\w+";
     const BLOCK_REGEX_2: &str = r"HALUsageReporting::.*";
 
     let bindings = bindgen::Builder::default()
-        .header("../HAL_wrapper.h")
+        .header(format!("{}", rbot_dir().join("HAL_wrapper.h").display()))
         .whitelist_type(BLOCK_REGEX_1)
         .whitelist_function(BLOCK_REGEX_1)
         .whitelist_var(BLOCK_REGEX_1)
         .whitelist_type(BLOCK_REGEX_2)
-        .clang_arg(format!("-I{}", HEADER_DIR))
+        .clang_arg(format!("-I{}", rbot_dir().join(HEADER_DIR).display()))
         .clang_arg("-nostdinc")
         .clang_arg("-xc++")
         .clang_arg("-nostdinc++")
@@ -30,7 +34,7 @@ fn generate_bindings() {
     
     let out = bindings.generate().expect("Unable to generate bindings.");
 
-    out.write_to_file("src/hal_bindings.rs").expect("Could not write bindings to file.");
+    out.write_to_file(rbot_dir().join("src/hal_bindings.rs")).expect("Could not write bindings to file.");
 
 }
 
