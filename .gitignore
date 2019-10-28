@@ -1,5 +1,5 @@
-/libs
-/headers
+/rbotlib/libs
+/rbothal/headers
 
 /target
 **/*.rs.bk

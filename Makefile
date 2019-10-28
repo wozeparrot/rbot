@@ -13,7 +13,7 @@ update_submod:
 
 cp_libs: local_dir := $(local_dir)
 cp_libs: wpilib_compile
-	mkdir $(local_dir)rbotlib/libs/
+	mkdir -p $(local_dir)rbotlib/libs/
 
 	cp -v $(local_dir)allwpilib/hal/build/libs/hal/shared/linuxathena/release/*.so $(local_dir)rbotlib/libs/
 	cp -v $(local_dir)allwpilib/wpiutil/build/libs/wpiutil/shared/linuxathena/release/*.so $(local_dir)rbotlib/libs/
@@ -21,11 +21,11 @@ cp_libs: wpilib_compile
 	cp -v $(local_dir)ni-libraries/src/lib/chipobject/* $(local_dir)rbotlib/libs/
 	cp -v $(local_dir)ni-libraries/src/lib/netcomm/* $(local_dir)rbotlib/libs/
 
-	cd $(local_dir)libs && bash -c 'pwd; for i in *.so.*; do mv -i "$$i" "$${i%.so.*}.so"; done'
+	cd $(local_dir)rbotlib/libs && bash -c 'pwd; for i in *.so.*; do mv -i "$$i" "$${i%.so.*}.so"; done'
 
 cp_headers: local_dir := $(local_dir)
 cp_headers: update_submod wpilib_compile
-	mkdir $(local_dir)rbothal/headers/
+	mkdir -p $(local_dir)rbothal/headers/
 
 	cp -R -v $(local_dir)allwpilib/hal/src/main/native/include/hal/ $(local_dir)rbothal/headers/
 	cp -R -v $(local_dir)allwpilib/hal/build/generated/headers/hal/ $(local_dir)rbothal/headers/
