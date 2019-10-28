@@ -1,6 +1,3 @@
-/rbotlib/libs
-/rbothal/headers
-
 /target
 **/*.rs.bk
 Cargo.lock
