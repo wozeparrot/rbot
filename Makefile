@@ -1,6 +1,6 @@
 local_dir := $(dir $(lastword $(MAKEFILE_LIST)))
 
-.PHONY: wpilib_compile cp_libs cp_headers update_submod a-bot_clean wpilib_clean ni_clean
+.PHONY: wpilib_compile cp_libs cp_headers gen_bindings update_submod a-bot_clean wpilib_clean ni_clean
 
 wpilib_compile: local_dir := $(local_dir)
 wpilib_compile: update_submod
@@ -46,6 +46,10 @@ cp_headers: update_submod wpilib_compile
 	python2 $(local_dir)get_frc_arm_gcc_header.py | xargs -I '{}' find '{}' -type f -name "glob.h" | xargs dirname | xargs -I '{}' cp -R '{}/bits' $(local_dir)rbothal/headers/
 	python2 $(local_dir)get_frc_arm_gcc_header.py | xargs -I '{}' find '{}' -type f -path "*/include/stddef.h" | xargs -I '{}' cp -R '{}' $(local_dir)rbothal/headers/
 
+gen_bindings: local_dir := $(local_dir)
+gen_bindings:
+	cd $(local_dir)rbothal; cargo build --target=arm-unknown-linux-gnueabi --release
+
 a-bot_clean: local_dir := $(local_dir)
 a-bot_clean:
 	rm -rf $(local_dir)rbotlib/libs/*
@@ -61,4 +65,4 @@ ni_clean: update_submod
 
 clean: a-bot_clean wpilib_clean ni_clean
 
-all: clean cp_libs cp_headers
+all: clean cp_libs cp_headers gen_bindings

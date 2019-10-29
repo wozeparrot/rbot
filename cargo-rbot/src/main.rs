@@ -1,5 +1,5 @@
-use clap::*;
-use subprocess::*;
+use clap::{App, AppSettings, Arg, SubCommand};
+use subprocess::Exec;
 
 use std::fs;
 use std::fs::File;
@@ -22,7 +22,7 @@ fn main() {
                 )
                 .subcommand(
                     SubCommand::with_name("create")
-                        .help("create a rbot project")
+                        .about("create a rbot project")
                         .arg(
                             Arg::with_name("NAME")
                                 .required(true)
@@ -36,6 +36,15 @@ fn main() {
                                 .help("team number")
                         )
                 )
+                .subcommand(
+                    SubCommand::with_name("deploy")
+                        .about("deploy a rbot project")
+                        .arg(
+                            Arg::with_name("release")
+                                .long("--release")
+                                .help("build in release mode")
+                        )
+                )
                 .setting(AppSettings::SubcommandRequiredElseHelp)
         )
         .setting(AppSettings::SubcommandRequired)
@@ -45,10 +54,10 @@ fn main() {
 
     match rbot_matches.subcommand_name() {
         Some("create") => {
-            create(rbot_matches.subcommand_matches("create").unwrap().value_of("NAME").expect("name not found"), rbot_matches.subcommand_matches("create").unwrap().value_of("TEAM").expect("name not found"))
+            create(rbot_matches.subcommand_matches("create").unwrap().value_of("NAME").unwrap(), rbot_matches.subcommand_matches("create").unwrap().value_of("TEAM").unwrap())
         }
         Some("deploy") => {
-
+            deploy(rbot_matches.subcommand_matches("deploy").unwrap().is_present("release"))
         }
         _ => panic!("Unknown Subcommand")
     }
@@ -65,7 +74,7 @@ fn create(name: &str, team: &str) {
     f.write_all(b"\nversion = \"0.1.0\"").unwrap();
     f.write_all(b"\nedition = \"2018\"").unwrap();
     f.write_all(b"\n").unwrap();
-    f.write_all(b"\n[dependancies]\n").unwrap();
+    f.write_all(b"\n[dependencies]\n").unwrap();
     f.write_all(b"rbotlib = \"0.0.2\"").unwrap();
 
     f.sync_all().unwrap();
@@ -76,4 +85,28 @@ fn create(name: &str, team: &str) {
     f.write_all(format!("\"{}\"", team).as_bytes()).unwrap();
 
     f.sync_all().unwrap();
+
+    let mut f = File::create(format!("{}/{}/{}", name, "src", "main.rs")).expect("src/main.rs Creation Failed");
+    f.write_all(b"fn main() {").unwrap();
+    f.write_all(b"    println!(\"Hello rbot!\"))").unwrap();
+    f.write_all(b"}").unwrap();
+
+    f.sync_all().unwrap();
+}
+
+fn deploy(release: bool) {
+    build_project(release);
+}
+
+fn build_project(release: bool) {
+    let mut args = vec![
+        "build",
+        "--target=arm-unknown-linux-gnueabi",
+    ];
+
+    if release {
+        args.push("--release");
+    }
+
+    Exec::cmd("cargo").args(&args).join().expect("cargo build Failed");
 }
