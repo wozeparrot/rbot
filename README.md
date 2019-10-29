@@ -6,12 +6,16 @@
 
 ## rbothal
 
-The Hardware Abstraction Layer bindings for [rbotlib](#rbotlib).
+The Hardware Abstraction Layer bindings for [rbotlib](#rbotlib). DO NOT USE THIS DIRECTLY, instead use [rbotlib](#rbotlib).
 
 ## rbotlib
 
-The actual rust library for programming FRC robots in rust. 
+The actual rust library for programming FRC robots in rust. Currently in a highly experimental state, use at your own risk.
 
 ## cargo-rbot
 
-W.I.P
+Install with `cargo install cargo-rbot`.
+
+## Examples
+
+Located in [`rbot-examples`](https://github.com/wozeparrot/rbot/tree/master/rbot-examples).
