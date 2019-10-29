@@ -4220,7 +4220,6 @@ pub mod HAL_Type {
 pub struct HAL_Value {
     pub data: HAL_Value__bindgen_ty_1,
     pub type_: HAL_Type::Type,
-    pub __bindgen_padding_0: u32,
 }
 #[repr(C)]
 #[derive(Copy, Clone)]

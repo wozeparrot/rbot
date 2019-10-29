@@ -5,4 +5,6 @@
 pub use rbothal;
 
 pub mod robot_base;
+pub mod robot_state;
 pub mod driverstation;
+pub mod fpga;
