@@ -175,4 +175,85 @@ impl<'a> DriverStation<'a> {
 
         Ok(povs.povs[pov.0 as usize] as i32)
     }
+
+    pub fn get_alliance(&self) -> HalResult<Alliance> {
+        match hal_call!(HAL_GetAllianceStation())? {
+            HAL_AllianceStationID::kRed1 | HAL_AllianceStationID::kRed2 | HAL_AllianceStationID::kRed3 => Ok(Alliance::Red),
+            HAL_AllianceStationID::kBlue1 | HAL_AllianceStationID::kBlue2 | HAL_AllianceStationID::kBlue3 => Ok(Alliance::Blue),
+            _ => Err(HalError(0)),
+        }
+    }
+
+    pub fn get_station(&self) -> HalResult<i32> {
+        match hal_call!(HAL_GetAllianceStation())? {
+            HAL_AllianceStationID::kBlue1 | HAL_AllianceStationID::kRed1 => Ok(1),
+            HAL_AllianceStationID::kBlue2 | HAL_AllianceStationID::kRed2 => Ok(2),
+            HAL_AllianceStationID::kBlue3 | HAL_AllianceStationID::kRed3 => Ok(3),
+            _ => Err(HalError(0))
+        }
+    }
+
+    pub fn get_robot_state(&self) -> RobotState {
+        let mut control_word: HAL_ControlWord = Default::default();
+
+        unsafe {
+            HAL_GetControlWord(&mut control_word);
+        }
+
+        if control_word.enabled() != 0 {
+            if control_word.autonomous() != 0 {
+                RobotState::Autonomous
+            } else if control_word.test() != 0 {
+                RobotState::Test
+            } else {
+                RobotState::Teleop
+            }
+        } else if control_word.eStop() != 0 {
+            RobotState::EStop
+        } else {
+            RobotState::Disabled
+        }
+    }
+
+    pub fn is_ds_attached(&self) -> bool {
+        let mut control_word: HAL_ControlWord = Default::default();
+
+        unsafe {
+            HAL_GetControlWord(&mut control_word);
+        }
+
+        control_word.dsAttached() != 0
+    }
+
+    pub fn is_fms_attached(&self) -> bool {
+        let mut control_word: HAL_ControlWord = Default::default();
+
+        unsafe {
+            HAL_GetControlWord(&mut control_word);
+        }
+
+        control_word.fmsAttached() != 0
+    }
+
+    pub fn get_game_message(&self) -> Vec<u8> {
+        let mut info: HAL_MatchInfo = Default::default();
+
+        unsafe {
+            HAL_GetMatchInfo(&mut info);
+        }
+
+        info.gameSpecificMessage[0..info.gameSpecificMessageSize as usize].to_vec()
+    }
+
+    pub fn wait_for_data(&self) {
+        unsafe {
+            HAL_WaitForDSData();
+        }
+    }
+
+    pub fn wait_for_data_timeout(&self, timeout: f64) {
+        unsafe {
+            HAL_WaitForDSDataTimeout(timeout);
+        }
+    }
 }

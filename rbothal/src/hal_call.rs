@@ -5,6 +5,8 @@ use std::error::Error;
 use std::ffi::CStr;
 use std::fmt;
 
+use crate::*;
+
 #[derive(Copy, Clone)]
 pub struct HalError(pub i32);
 
