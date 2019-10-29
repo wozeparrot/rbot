@@ -9,6 +9,3 @@ repository = "https://github.com/wozeparrot/rbot"
 
 [dependencies]
 rbothal = { path = "../rbothal", version = "0.0.1" }
-
-[build-dependencies]
-bindgen = "0.51.1"
