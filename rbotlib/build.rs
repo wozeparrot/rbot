@@ -6,7 +6,12 @@ fn rbot_dir() -> PathBuf {
 }
 
 fn main() {
+    create_symlink();
     link_libs();
+}
+
+fn create_symlink() {
+
 }
 
 const LIB_DIR: &'static str = "libs";
@@ -28,5 +33,6 @@ fn link_libs() {
         println!("cargo:rustc-link-lib=dylib={}", lib);
     }
 
-    println!("cargo:rustc-link-search=native={}{}", rbot_dir().join("libs/").display(), LIB_DIR);
+    let current_dir = env::current_dir().unwrap();
+    println!("cargo:rustc-link-search=native={}/{}", current_dir, LIB_DIR);
 }
