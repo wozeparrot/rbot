@@ -1,0 +1,4 @@
+[workspace]
+members = [
+    "super_simple_robot"
+]

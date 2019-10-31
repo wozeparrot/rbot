@@ -4,3 +4,6 @@ members = [
     "rbotlib",
     "cargo-rbot"
 ]
+exclude = [
+    "rbot-examples"
+]

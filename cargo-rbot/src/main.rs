@@ -1,9 +1,14 @@
 use clap::{App, AppSettings, Arg, SubCommand};
 use subprocess::Exec;
+use subprocess::ExitStatus;
+use toml;
+use serde_derive::Deserialize;
 
 use std::fs;
 use std::fs::File;
 use std::io::Write;
+use std::time::Duration;
+use std::process::exit;
 
 fn main() {
     let matches = App::new("cargo-rbot")
@@ -94,8 +99,45 @@ fn create(name: &str, team: &str) {
     f.sync_all().unwrap();
 }
 
+#[derive(Deserialize)]
+struct Config {
+    deploy: Deploy,
+}
+
+#[derive(Deserialize)]
+struct Deploy {
+    team: String,
+    rio_ip: Option<String>,
+}
+
 fn deploy(release: bool) {
+    let rbot_config: Config = toml::from_str(fs::read_to_string(".rbotconfig").expect(".rbotconfig not found").as_str()).unwrap();
+
+    let team_number = rbot_config.deploy.team.parse::<usize>().unwrap();
+
     build_project(release);
+
+    let addresses = if let Some(addr) = rbot_config.deploy.rio_ip.clone() {
+        vec![addr]
+    } else {
+        make_ssh_addresses(team_number)
+    };
+
+    for addr in &addresses {
+        println!("looking for roborio at {}", addr);
+        let login = &format!("admin@{}", addr);
+        if test_ssh_addr(login) {
+            println!("found roborio at {}", addr);
+            deploy_executable();
+            exit(0);
+        }
+    }
+
+    panic!("no roborios found");
+}
+
+fn deploy_executable() {
+
 }
 
 fn build_project(release: bool) {
@@ -109,4 +151,30 @@ fn build_project(release: bool) {
     }
 
     Exec::cmd("cargo").args(&args).join().expect("cargo build Failed");
+}
+
+fn make_ssh_addresses(team: usize) -> Vec<String> {
+    vec![
+        format!("roborio-{}-FRC.local", team),
+        format!("10.{}.{}.2", team / 100, team % 100),
+        "172.22.11.2".to_string(),
+    ]
+}
+
+fn test_ssh_addr(addr: &str) -> bool {
+    let mut process = Exec::cmd("ssh")
+        .arg("-oBatchMode=yes")
+        .arg("-oStrictHostKeyChecking=no")
+        .arg(addr)
+        .popen()
+        .unwrap();
+    
+    let ret = match process.wait_timeout(Duration::from_secs(2)).unwrap() {
+        Some(ExitStatus::Exited(0)) => true,
+        _ => false,
+    };
+
+    process.kill().unwrap();
+
+    ret
 }

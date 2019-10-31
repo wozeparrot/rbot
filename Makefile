@@ -4,7 +4,7 @@ local_dir := $(dir $(lastword $(MAKEFILE_LIST)))
 
 wpilib_compile: local_dir := $(local_dir)
 wpilib_compile: update_submod
-	cd $(local_dir)allwpilib;./gradlew :hal:halLinuxathenaReleaseSharedLibrary --console=plain --no-scan
+	cd $(local_dir)allwpilib;./gradlew :hal:halLinuxathenaReleaseSharedLibrary --no-scan
 
 update_submod: local_dir := $(local_dir)
 update_submod:

@@ -6,12 +6,7 @@ fn rbot_dir() -> PathBuf {
 }
 
 fn main() {
-    create_symlink();
     link_libs();
-}
-
-fn create_symlink() {
-
 }
 
 const LIB_DIR: &'static str = "libs";

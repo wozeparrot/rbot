@@ -18,4 +18,4 @@ Install with `cargo install cargo-rbot`.
 
 ## Examples
 
-Located in [`rbot-examples`](https://github.com/wozeparrot/rbot/tree/master/rbot-examples).
+Located in [`rbot-examples`](rbot-examples/).
