@@ -13,7 +13,7 @@ use std::time::Duration;
 use std::process::exit;
 use std::path::*;
 use std::ffi::OsStr;
-
+use std::env;
 
 fn main() {
     let matches = App::new("cargo-rbot")
@@ -152,7 +152,8 @@ const RBOT_SETUP_SCRIPT: &'static str = "/home/lvuser/rbot-rio-setup.sh";
 const EXEC_TMP: &'static str = "/home/lvuser/rbot-exec-tmp";
 
 fn deploy_executable(release: bool, name: &str, rio_addr: &str) {
-    let mut executable_path = PathBuf::from("target");
+    let mut executable_path = env::current_dir().unwrap();
+    executable_path.push("target");    
     if release {
         executable_path.push("release")
     } else {
@@ -160,7 +161,7 @@ fn deploy_executable(release: bool, name: &str, rio_addr: &str) {
     }
     executable_path.push(name);
 
-    let executable_path = executable_path.canonicalize().expect("failed to canonicalize exec path");
+    //let executable_path = executable_path.canonicalize().expect("failed to canonicalize exec path");
     let executable_name = executable_path.file_name().expect("exec path does not point to a file").to_str().expect("exec path is not valid unicode");
 
     let mut script = tempfile::NamedTempFile::new().expect("could not create temp file");

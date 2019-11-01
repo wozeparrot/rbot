@@ -1,7 +1,7 @@
 use rbotlib::*;
 
 fn main() {
-    let robot = robot_base::RobotBase::new(500).expect("HAL Failed to Init");
+    let robot = rbotlib::robot_base::RobotBase::new(500).expect("HAL Failed to Init");
     robot.run();
 
     let ds = robot.init_ds();

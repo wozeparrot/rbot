@@ -1,0 +1,4 @@
+name = "super_simple_robot"
+
+[deploy]
+team = "4308"

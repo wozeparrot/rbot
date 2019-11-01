@@ -1,6 +1,6 @@
 [package]
 name = "rbotlib"
-version = "0.0.1"
+version = "0.0.2"
 authors = ["wozeparrot"]
 edition = "2018"
 license = "BSD-3-Clause"
@@ -8,4 +8,4 @@ description = "Rust FRC Library"
 repository = "https://github.com/wozeparrot/rbot"
 
 [dependencies]
-rbothal = { path = "../rbothal", version = "0.0.1" }
+rbothal = { path = "../rbothal", version = "0.0.2" }
