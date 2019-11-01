@@ -1,6 +1,8 @@
-# rbot (A Rust FRC Library)
+# `rbot` (A Rust FRC Library)
 
 **This Monorepo is currently split into 3 parts: [rbothal](#rbothal), [rbotlib](#rbotlib), and [cargo-rbot](#cargo-rbot).**
+
+`rbot` is a monorepository for highly experimental rust code to run on a roborio for FRC Competitions!
 
 ---
 
@@ -14,12 +16,14 @@ The actual rust library for programming FRC robots in rust. Currently in a highl
 
 ## cargo-rbot
 
-Install with `cargo install cargo-rbot`. Used to create and deploy rbot projects.
+Install with `cargo install cargo-rbot`. Used to create and deploy `rbot` projects.
 
 ## Examples
 
 Located in [`rbot-examples`](rbot-examples/).
 
-# Credits
+---
+
+## Credits
 
 Lots of credit goes to [first-rust-competition](https://github.com/Lytigas/first-rust-competition) as that inspired me to create this in the first place. More credit goes to [rust-wpilib](https://github.com/robotrs/rust-wpilib) as that helped me out a lot on creating the wpilib port.
