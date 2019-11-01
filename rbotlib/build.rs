@@ -12,6 +12,7 @@ fn main() {
 const LIB_DIR: &'static str = "libs";
 const LIB_LIST: &'static [&'static str] = &[
     "FRC_NetworkCommunication",
+    "nirio_emb_can",
     "NiFpga",
     "NiFpgaLv",
     "niriodevenum",
@@ -29,5 +30,5 @@ fn link_libs() {
     }
 
     let current_dir = env::current_dir().unwrap();
-    println!("cargo:rustc-link-search=native={}/{}", current_dir, LIB_DIR);
+    println!("cargo:rustc-link-search=native={}/{}", current_dir.display(), LIB_DIR);
 }

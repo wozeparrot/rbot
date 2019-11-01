@@ -3,12 +3,17 @@ use subprocess::Exec;
 use subprocess::ExitStatus;
 use toml;
 use serde_derive::Deserialize;
+use tempfile;
+use ref_slice::*;
 
 use std::fs;
 use std::fs::File;
 use std::io::Write;
 use std::time::Duration;
 use std::process::exit;
+use std::path::*;
+use std::ffi::OsStr;
+
 
 fn main() {
     let matches = App::new("cargo-rbot")
@@ -85,7 +90,9 @@ fn create(name: &str, team: &str) {
     f.sync_all().unwrap();
 
     let mut f = File::create(format!("{}/{}", name, ".rbotconfig")).expect(".rbotconfig Creation Failed");
-    f.write_all(b"[deploy]\n").unwrap();
+    f.write_all(b"name = ").unwrap();
+    f.write_all(format!("\"{}\"", name).as_bytes()).unwrap();
+    f.write_all(b"\n\n[deploy]\n").unwrap();
     f.write_all(b"team = ").unwrap();
     f.write_all(format!("\"{}\"", team).as_bytes()).unwrap();
 
@@ -101,6 +108,7 @@ fn create(name: &str, team: &str) {
 
 #[derive(Deserialize)]
 struct Config {
+    name: String,
     deploy: Deploy,
 }
 
@@ -115,6 +123,9 @@ fn deploy(release: bool) {
 
     let team_number = rbot_config.deploy.team.parse::<usize>().unwrap();
 
+    let name = rbot_config.name.as_str();
+
+    println!("building project");
     build_project(release);
 
     let addresses = if let Some(addr) = rbot_config.deploy.rio_ip.clone() {
@@ -128,7 +139,8 @@ fn deploy(release: bool) {
         let login = &format!("admin@{}", addr);
         if test_ssh_addr(login) {
             println!("found roborio at {}", addr);
-            deploy_executable();
+            println!("deploying");
+            deploy_executable(release, name, login);
             exit(0);
         }
     }
@@ -136,8 +148,51 @@ fn deploy(release: bool) {
     panic!("no roborios found");
 }
 
-fn deploy_executable() {
+const RBOT_SETUP_SCRIPT: &'static str = "/home/lvuser/rbot-rio-setup.sh";
+const EXEC_TMP: &'static str = "/home/lvuser/rbot-exec-tmp";
 
+fn deploy_executable(release: bool, name: &str, rio_addr: &str) {
+    let mut executable_path = PathBuf::from("target");
+    if release {
+        executable_path.push("release")
+    } else {
+        executable_path.push("debug")
+    }
+    executable_path.push(name);
+
+    let executable_path = executable_path.canonicalize().expect("failed to canonicalize exec path");
+    let executable_name = executable_path.file_name().expect("exec path does not point to a file").to_str().expect("exec path is not valid unicode");
+
+    let mut script = tempfile::NamedTempFile::new().expect("could not create temp file");
+    script.as_file_mut().write_all(format!(
+        r#"#!/bin/bash
+            . /etc/profile.d/natinst-path.sh; /usr/local/frc/bin/frcKillRobot.sh -t 2 > /dev/null
+            mv {tmp_exec} /home/lvuser/{exec_name}
+            rm -f /home/lvuser/robotCommand
+            touch /home/lvuser/robotCommand
+            echo "/home/lvuser/{exec_name}" > /home/lvuser/robotCommand
+            chmod +x /home/lvuser/robotCommand"
+            chown lvuser /home/lvuser/robotCommand
+            sync
+            ldconfig
+            . /etc/profile.d/natinst-path.sh; /usr/local/frc/bin/frcKillRobot.sh -t -r 2 > /dev/null"#,
+        tmp_exec = EXEC_TMP,
+        exec_name = executable_name)
+        .as_bytes()
+    ).expect("could not write to tmp file");
+
+    script.as_file_mut().sync_all().expect("failed to sync all");
+
+    let script_path = script.as_ref().canonicalize().expect("failed to canonicalize script path");
+
+    println!("scping rbot setup script");
+    scp(ref_slice(&script_path), rio_addr, RBOT_SETUP_SCRIPT);
+
+    println!("scping project exec");
+    scp(ref_slice(&executable_path), rio_addr, EXEC_TMP);
+
+    println!("running rbot setup script on rio");
+    ssh(&rio_addr, &format!("sh {}", RBOT_SETUP_SCRIPT));
 }
 
 fn build_project(release: bool) {
@@ -166,6 +221,7 @@ fn test_ssh_addr(addr: &str) -> bool {
         .arg("-oBatchMode=yes")
         .arg("-oStrictHostKeyChecking=no")
         .arg(addr)
+        .arg("\"exit\"")
         .popen()
         .unwrap();
     
@@ -177,4 +233,32 @@ fn test_ssh_addr(addr: &str) -> bool {
     process.kill().unwrap();
 
     ret
+}
+
+fn scp<T: AsRef<OsStr> + std::fmt::Debug>(local_paths: &[T], remote_addr: &str, remote_path: &str) {
+    let mut builder = subprocess::Exec::cmd("scp")
+        .arg("-oBatchMode=yes")
+        .arg("-oStrictHostKeyChecking=no");
+    for path in local_paths.iter() {
+        builder = builder.arg(path);
+    }
+    builder = builder.arg(format!("{}:{}", remote_addr, remote_path));
+
+    println!("scp process struct {:?}", builder);
+    println!("running scp: \"{}\"", builder.to_cmdline_lossy());
+
+    builder.join().expect("scp command failed");
+}
+
+fn ssh<T: AsRef<OsStr> + std::fmt::Debug>(remote_addr: &T, command: &str) {
+    let builder = subprocess::Exec::cmd("ssh")
+        .arg("-oBatchMode=yes")
+        .arg("-oStrictHostKeyChecking=no")
+        .arg(remote_addr)
+        .arg(command);
+
+    println!("ssh process struct {:?}", builder);
+    println!("running ssh: \"{}\"", builder.to_cmdline_lossy());
+
+    builder.join().expect("scp command failed");
 }

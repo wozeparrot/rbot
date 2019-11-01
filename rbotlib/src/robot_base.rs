@@ -35,7 +35,7 @@ impl RobotBase {
         })
     }
 
-    pub fn run() {
+    pub fn run(&self) {
         unsafe {
             HAL_ObserveUserProgramStarting();
         }
@@ -43,7 +43,7 @@ impl RobotBase {
         println!("\n\n******* Robot Program Starting *******\n\n");
     }
 
-    pub fn ds_init(&self) -> DriverStation {
+    pub fn init_ds(&self) -> DriverStation {
         DriverStation::from_robot_base(self).expect("HAL Failed on DriverStation Init")
     }
 }

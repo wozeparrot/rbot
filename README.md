@@ -14,8 +14,12 @@ The actual rust library for programming FRC robots in rust. Currently in a highl
 
 ## cargo-rbot
 
-Install with `cargo install cargo-rbot`.
+Install with `cargo install cargo-rbot`. Used to create and deploy rbot projects.
 
 ## Examples
 
 Located in [`rbot-examples`](rbot-examples/).
+
+# Credits
+
+Lots of credit goes to [first-rust-competition](https://github.com/Lytigas/first-rust-competition) as that inspired me to create this in the first place. More credit goes to [rust-wpilib](https://github.com/robotrs/rust-wpilib) as that helped me out a lot on creating the wpilib port.
