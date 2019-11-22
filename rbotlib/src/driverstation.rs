@@ -8,62 +8,8 @@ use std::os::raw::c_char;
 use rbothal::HAL_MatchType::*;
 use rbothal::*;
 
+use crate::joystick::{JoystickAxis, JoystickButton, JoystickError, JoystickPort, JoystickPOV};
 use crate::robot_base::RobotBase;
-
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
-pub enum JoystickError {
-    PortDNE,
-    ButtonUnplugged,
-    AxisUnplugged,
-    AxisDNE,
-    PovDNE,
-    PovUnplugged,
-}
-
-#[derive(Copy, Clone, Debug)]
-pub struct JoystickPort(i32);
-
-impl JoystickPort {
-    pub fn new(port: u8) -> Result<JoystickPort, JoystickError> {
-        if port as u32 >= HAL_kMaxJoysticks {
-            return Err(JoystickError::PortDNE);
-        }
-        Ok(JoystickPort(i32::from(port)))
-    }
-}
-
-#[derive(Copy, Clone, Debug)]
-pub struct JoystickButton(i32);
-
-impl JoystickButton {
-    pub fn new(button: u8) -> Result<JoystickButton, JoystickError> {
-        Ok(JoystickButton(i32::from(button)))
-    }
-}
-
-#[derive(Copy, Clone, Debug)]
-pub struct JoystickPOV(i32);
-
-impl JoystickPOV {
-    pub fn new(pov: u8) -> Result<JoystickPOV, JoystickError> {
-        if pov as u32 >= HAL_kMaxJoystickPOVs {
-            return Err(JoystickError::PovDNE);
-        }
-        Ok(JoystickPOV(i32::from(pov)))
-    }
-}
-
-#[derive(Copy, Clone, Debug)]
-pub struct JoystickAxis(i32);
-
-impl JoystickAxis {
-    pub fn new(axis: u8) -> Result<JoystickAxis, JoystickError> {
-        if axis as u32 >= HAL_kMaxJoystickAxes {
-            return Err(JoystickError::AxisDNE);
-        }
-        Ok(JoystickAxis(i32::from(axis)))
-    }
-}
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub enum Alliance {

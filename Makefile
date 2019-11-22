@@ -20,6 +20,7 @@ cp_libs: wpilib_compile
 	
 	cp -v $(local_dir)ni-libraries/src/lib/chipobject/* $(local_dir)rbotlib/libs/
 	cp -v $(local_dir)ni-libraries/src/lib/netcomm/* $(local_dir)rbotlib/libs/
+	cp -v $(local_dir)ni-libraries/src/lib/runtime/* $(local_dir)rbotlib/libs/
 
 	cd $(local_dir)rbotlib/libs && bash -c 'pwd; for i in *.so.*; do mv -i "$$i" "$${i%.so.*}.so"; done'
 

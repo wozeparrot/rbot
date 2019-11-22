@@ -15,6 +15,8 @@ const LIB_LIST: &'static [&'static str] = &[
     "nirio_emb_can",
     "NiFpga",
     "NiFpgaLv",
+    "no_emb",
+    "ni_rtlog",
     "niriodevenum",
     "niriosession",
     "NiRioSrv",

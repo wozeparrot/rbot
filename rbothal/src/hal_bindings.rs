@@ -102,12 +102,16 @@ pub const HAL_INVALID_ACCUMULATOR_CHANNEL: i32 = -1035;
 pub const HAL_COUNTER_NOT_SUPPORTED: i32 = -1058;
 pub const HAL_PWM_SCALE_ERROR: i32 = -1072;
 pub const HAL_HANDLE_ERROR: i32 = -1098;
+pub const HAL_LED_CHANNEL_ERROR: i32 = -1099;
+pub const HAL_INVALID_DMA_ADDITION: i32 = -1102;
 pub const HAL_SERIAL_PORT_NOT_FOUND: i32 = -1123;
 pub const HAL_SERIAL_PORT_OPEN_ERROR: i32 = -1124;
 pub const HAL_SERIAL_PORT_ERROR: i32 = -1125;
 pub const HAL_THREAD_PRIORITY_ERROR: i32 = -1152;
 pub const HAL_THREAD_PRIORITY_RANGE_ERROR: i32 = -1153;
 pub const HAL_CAN_TIMEOUT: i32 = -1154;
+pub const HAL_SIM_NOT_SUPPORTED: i32 = -1155;
+pub const HAL_CAN_BUFFER_OVERRUN: i32 = -35007;
 pub type HAL_Handle = i32;
 pub type HAL_PortHandle = HAL_Handle;
 pub type HAL_AnalogInputHandle = HAL_Handle;
@@ -128,6 +132,9 @@ pub type HAL_SerialPortHandle = HAL_Handle;
 pub type HAL_CANHandle = HAL_Handle;
 pub type HAL_SimDeviceHandle = HAL_Handle;
 pub type HAL_SimValueHandle = HAL_Handle;
+pub type HAL_DMAHandle = HAL_Handle;
+pub type HAL_DutyCycleHandle = HAL_Handle;
+pub type HAL_AddressableLEDHandle = HAL_Handle;
 pub type HAL_PDPHandle = HAL_CANHandle;
 pub type HAL_Bool = i32;
 pub mod HAL_AccelerometerRange {
@@ -590,6 +597,18 @@ extern "C" {
     pub fn HAL_GetAnalogOffset(analogPortHandle: HAL_AnalogInputHandle, status: *mut i32) -> i32;
 }
 extern "C" {
+    #[doc = "  Get the analog voltage from a raw value."]
+    #[doc = ""]
+    #[doc = " @param analogPortHandle  Handle to the analog port the values were read from."]
+    #[doc = " @param rawValue          The raw analog value"]
+    #[doc = " @return                  The voltage relating to the value"]
+    pub fn HAL_GetAnalogValueToVolts(
+        analogPortHandle: HAL_AnalogInputHandle,
+        rawValue: i32,
+        status: *mut i32,
+    ) -> f64;
+}
+extern "C" {
     #[doc = " Initializes the analog output port using the given port object."]
     #[doc = ""]
     #[doc = " @param handle handle to the port"]
@@ -645,11 +664,17 @@ extern "C" {
     #[doc = " Initializes an analog trigger."]
     #[doc = ""]
     #[doc = " @param portHandle the analog input to use for triggering"]
-    #[doc = " @param index      the trigger index value (output)"]
     #[doc = " @return           the created analog trigger handle"]
     pub fn HAL_InitializeAnalogTrigger(
         portHandle: HAL_AnalogInputHandle,
-        index: *mut i32,
+        status: *mut i32,
+    ) -> HAL_AnalogTriggerHandle;
+}
+extern "C" {
+    #[doc = " Initializes an analog trigger with a Duty Cycle input"]
+    #[doc = ""]
+    pub fn HAL_InitializeAnalogTriggerDutyCycle(
+        dutyCycleHandle: HAL_DutyCycleHandle,
         status: *mut i32,
     ) -> HAL_AnalogTriggerHandle;
 }
@@ -662,7 +687,8 @@ extern "C" {
 extern "C" {
     #[doc = " Sets the raw ADC upper and lower limits of the analog trigger."]
     #[doc = ""]
-    #[doc = " HAL_SetAnalogTriggerLimitsVoltage is likely better in most cases."]
+    #[doc = " HAL_SetAnalogTriggerLimitsVoltage or HAL_SetAnalogTriggerLimitsDutyCycle"]
+    #[doc = " is likely better in most cases."]
     #[doc = ""]
     #[doc = " @param analogTriggerHandle the trigger handle"]
     #[doc = " @param lower               the lower ADC value"]
@@ -690,10 +716,21 @@ extern "C" {
     );
 }
 extern "C" {
+    pub fn HAL_SetAnalogTriggerLimitsDutyCycle(
+        analogTriggerHandle: HAL_AnalogTriggerHandle,
+        lower: f64,
+        upper: f64,
+        status: *mut i32,
+    );
+}
+extern "C" {
     #[doc = " Configures the analog trigger to use the averaged vs. raw values."]
     #[doc = ""]
     #[doc = " If the value is true, then the averaged value is selected for the analog"]
     #[doc = " trigger, otherwise the immediate value is used."]
+    #[doc = ""]
+    #[doc = " This is not allowed to be used if filtered mode is set."]
+    #[doc = " This is not allowed to be used with Duty Cycle based inputs."]
     #[doc = ""]
     #[doc = " @param analogTriggerHandle the trigger handle"]
     #[doc = " @param useAveragedValue    true to use averaged values, false for raw"]
@@ -709,6 +746,8 @@ extern "C" {
     #[doc = " The analog trigger will operate with a 3 point average rejection filter. This"]
     #[doc = " is designed to help with 360 degree pot applications for the period where the"]
     #[doc = " pot crosses through zero."]
+    #[doc = ""]
+    #[doc = " This is not allowed to be used if averaged mode is set."]
     #[doc = ""]
     #[doc = " @param analogTriggerHandle the trigger handle"]
     #[doc = " @param useFilteredValue    true to use filtered values, false for average or"]
@@ -756,6 +795,16 @@ extern "C" {
         type_: HAL_AnalogTriggerType::Type,
         status: *mut i32,
     ) -> HAL_Bool;
+}
+extern "C" {
+    #[doc = " Get the FPGA index for the AnlogTrigger."]
+    #[doc = ""]
+    #[doc = " @param analogTriggerHandle the trigger handle"]
+    #[doc = " @return the FPGA index"]
+    pub fn HAL_GetAnalogTriggerFPGAIndex(
+        analogTriggerHandle: HAL_AnalogTriggerHandle,
+        status: *mut i32,
+    ) -> i32;
 }
 #[doc = " Storage for CAN Stream Messages."]
 #[repr(C)]
@@ -941,6 +990,7 @@ pub mod HAL_CANManufacturer {
     pub const HAL_CAN_Man_kKauaiLabs: Type = 9;
     pub const HAL_CAN_Man_kCopperforge: Type = 10;
     pub const HAL_CAN_Man_kPWF: Type = 11;
+    pub const HAL_CAN_Man_kStudica: Type = 12;
 }
 extern "C" {
     #[doc = " Initializes a CAN device."]
@@ -2296,6 +2346,22 @@ extern "C" {
     pub fn HAL_ReleaseDSMutex();
 }
 extern "C" {
+    #[doc = " Checks if new control data has arrived since the last"]
+    #[doc = " HAL_WaitForCachedControlData or HAL_IsNewControlData call. If new data has"]
+    #[doc = " not arrived, waits for new data to arrive. Otherwise, returns immediately."]
+    pub fn HAL_WaitForCachedControlData();
+}
+extern "C" {
+    #[doc = " Checks if new control data has arrived since the last"]
+    #[doc = " HAL_WaitForCachedControlData or HAL_IsNewControlData call. If new data has"]
+    #[doc = " not arrived, waits for new data to arrive, or a timeout. Otherwise, returns"]
+    #[doc = " immediately."]
+    #[doc = ""]
+    #[doc = " @param timeout timeout in seconds"]
+    #[doc = " @return        true for new data, false for timeout"]
+    pub fn HAL_WaitForCachedControlDataTimeout(timeout: f64) -> HAL_Bool;
+}
+extern "C" {
     #[doc = " Has a new control packet from the driver station arrived since the last"]
     #[doc = " time this function was called?"]
     #[doc = ""]
@@ -2627,6 +2693,165 @@ extern "C" {
         status: *mut i32,
     ) -> HAL_EncoderEncodingType::Type;
 }
+extern "C" {
+    #[doc = " Reports a hardware usage to the HAL."]
+    #[doc = ""]
+    #[doc = " @param resource       the used resource"]
+    #[doc = " @param instanceNumber the instance of the resource"]
+    #[doc = " @param context        a user specified context index"]
+    #[doc = " @param feature        a user specified feature string"]
+    #[doc = " @return               the index of the added value in NetComm"]
+    pub fn HAL_Report(
+        resource: i32,
+        instanceNumber: i32,
+        context: i32,
+        feature: *const ::std::os::raw::c_char,
+    ) -> i64;
+}
+pub mod HALUsageReporting_tResourceType {
+    pub type Type = i32;
+    pub const Controller: Type = 0;
+    pub const Module: Type = 1;
+    pub const Language: Type = 2;
+    pub const CANPlugin: Type = 3;
+    pub const Accelerometer: Type = 4;
+    pub const ADXL345: Type = 5;
+    pub const AnalogChannel: Type = 6;
+    pub const AnalogTrigger: Type = 7;
+    pub const AnalogTriggerOutput: Type = 8;
+    pub const CANJaguar: Type = 9;
+    pub const Compressor: Type = 10;
+    pub const Counter: Type = 11;
+    pub const Dashboard: Type = 12;
+    pub const DigitalInput: Type = 13;
+    pub const DigitalOutput: Type = 14;
+    pub const DriverStationCIO: Type = 15;
+    pub const DriverStationEIO: Type = 16;
+    pub const DriverStationLCD: Type = 17;
+    pub const Encoder: Type = 18;
+    pub const GearTooth: Type = 19;
+    pub const Gyro: Type = 20;
+    pub const I2C: Type = 21;
+    pub const Framework: Type = 22;
+    pub const Jaguar: Type = 23;
+    pub const Joystick: Type = 24;
+    pub const Kinect: Type = 25;
+    pub const KinectStick: Type = 26;
+    pub const PIDController: Type = 27;
+    pub const Preferences: Type = 28;
+    pub const PWM: Type = 29;
+    pub const Relay: Type = 30;
+    pub const RobotDrive: Type = 31;
+    pub const SerialPort: Type = 32;
+    pub const Servo: Type = 33;
+    pub const Solenoid: Type = 34;
+    pub const SPI: Type = 35;
+    pub const Task: Type = 36;
+    pub const Ultrasonic: Type = 37;
+    pub const Victor: Type = 38;
+    pub const Button: Type = 39;
+    pub const Command: Type = 40;
+    pub const AxisCamera: Type = 41;
+    pub const PCVideoServer: Type = 42;
+    pub const SmartDashboard: Type = 43;
+    pub const Talon: Type = 44;
+    pub const HiTechnicColorSensor: Type = 45;
+    pub const HiTechnicAccel: Type = 46;
+    pub const HiTechnicCompass: Type = 47;
+    pub const SRF08: Type = 48;
+    pub const AnalogOutput: Type = 49;
+    pub const VictorSP: Type = 50;
+    pub const PWMTalonSRX: Type = 51;
+    pub const CANTalonSRX: Type = 52;
+    pub const ADXL362: Type = 53;
+    pub const ADXRS450: Type = 54;
+    pub const RevSPARK: Type = 55;
+    pub const MindsensorsSD540: Type = 56;
+    pub const DigitalGlitchFilter: Type = 57;
+    pub const ADIS16448: Type = 58;
+    pub const PDP: Type = 59;
+    pub const PCM: Type = 60;
+    pub const PigeonIMU: Type = 61;
+    pub const NidecBrushless: Type = 62;
+    pub const CANifier: Type = 63;
+    pub const TalonFX: Type = 64;
+    pub const CTRE_future1: Type = 65;
+    pub const CTRE_future2: Type = 66;
+    pub const CTRE_future3: Type = 67;
+    pub const CTRE_future4: Type = 68;
+    pub const CTRE_future5: Type = 69;
+    pub const CTRE_future6: Type = 70;
+    pub const LinearFilter: Type = 71;
+    pub const XboxController: Type = 72;
+    pub const UsbCamera: Type = 73;
+    pub const NavX: Type = 74;
+    pub const Pixy: Type = 75;
+    pub const Pixy2: Type = 76;
+    pub const ScanseSweep: Type = 77;
+    pub const Shuffleboard: Type = 78;
+    pub const CAN: Type = 79;
+    pub const DigilentDMC60: Type = 80;
+    pub const PWMVictorSPX: Type = 81;
+    pub const RevSparkMaxPWM: Type = 82;
+    pub const RevSparkMaxCAN: Type = 83;
+    pub const ADIS16470: Type = 84;
+    pub const PIDController2: Type = 85;
+    pub const ProfiledPIDController: Type = 86;
+    pub const Kinematics: Type = 87;
+    pub const Odometry: Type = 88;
+    pub const Units: Type = 89;
+    pub const TrapezoidProfile: Type = 90;
+    pub const DutyCycle: Type = 91;
+    pub const AddressableLEDs: Type = 92;
+    pub const FusionVenom: Type = 93;
+}
+pub mod HALUsageReporting_tInstances {
+    pub type Type = i32;
+    pub const kLanguage_LabVIEW: Type = 1;
+    pub const kLanguage_CPlusPlus: Type = 2;
+    pub const kLanguage_Java: Type = 3;
+    pub const kLanguage_Python: Type = 4;
+    pub const kLanguage_DotNet: Type = 5;
+    pub const kCANPlugin_BlackJagBridge: Type = 1;
+    pub const kCANPlugin_2CAN: Type = 2;
+    pub const kFramework_Iterative: Type = 1;
+    pub const kFramework_Simple: Type = 2;
+    pub const kFramework_CommandControl: Type = 3;
+    pub const kFramework_Timed: Type = 4;
+    pub const kFramework_ROS: Type = 5;
+    pub const kFramework_RobotBuilder: Type = 6;
+    pub const kRobotDrive_ArcadeStandard: Type = 1;
+    pub const kRobotDrive_ArcadeButtonSpin: Type = 2;
+    pub const kRobotDrive_ArcadeRatioCurve: Type = 3;
+    pub const kRobotDrive_Tank: Type = 4;
+    pub const kRobotDrive_MecanumPolar: Type = 5;
+    pub const kRobotDrive_MecanumCartesian: Type = 6;
+    pub const kRobotDrive2_DifferentialArcade: Type = 7;
+    pub const kRobotDrive2_DifferentialTank: Type = 8;
+    pub const kRobotDrive2_DifferentialCurvature: Type = 9;
+    pub const kRobotDrive2_MecanumCartesian: Type = 10;
+    pub const kRobotDrive2_MecanumPolar: Type = 11;
+    pub const kRobotDrive2_KilloughCartesian: Type = 12;
+    pub const kRobotDrive2_KilloughPolar: Type = 13;
+    pub const kDriverStationCIO_Analog: Type = 1;
+    pub const kDriverStationCIO_DigitalIn: Type = 2;
+    pub const kDriverStationCIO_DigitalOut: Type = 3;
+    pub const kDriverStationEIO_Acceleration: Type = 1;
+    pub const kDriverStationEIO_AnalogIn: Type = 2;
+    pub const kDriverStationEIO_AnalogOut: Type = 3;
+    pub const kDriverStationEIO_Button: Type = 4;
+    pub const kDriverStationEIO_LED: Type = 5;
+    pub const kDriverStationEIO_DigitalIn: Type = 6;
+    pub const kDriverStationEIO_DigitalOut: Type = 7;
+    pub const kDriverStationEIO_FixedDigitalOut: Type = 8;
+    pub const kDriverStationEIO_PWM: Type = 9;
+    pub const kDriverStationEIO_Encoder: Type = 10;
+    pub const kDriverStationEIO_TouchSlider: Type = 11;
+    pub const kADXL345_SPI: Type = 1;
+    pub const kADXL345_I2C: Type = 2;
+    pub const kCommand_Scheduler: Type = 1;
+    pub const kSmartDashboard_Instance: Type = 1;
+}
 pub mod HAL_RuntimeType {
     #[doc = " @defgroup hal_capi WPILib HAL API"]
     #[doc = " Hardware Abstraction Layer to hardware or simulator"]
@@ -2712,6 +2937,19 @@ extern "C" {
     pub fn HAL_GetFPGATime(status: *mut i32) -> u64;
 }
 extern "C" {
+    #[doc = " Given an 32 bit FPGA time, expand it to the nearest likely 64 bit FPGA time."]
+    #[doc = ""]
+    #[doc = " Note: This is making the assumption that the timestamp being converted is"]
+    #[doc = " always in the past.  If you call this with a future timestamp, it probably"]
+    #[doc = " will make it in the past.  If you wait over 70 minutes between capturing the"]
+    #[doc = " bottom 32 bits of the timestamp and expanding it, you will be off by"]
+    #[doc = " multiples of 1<<32 microseconds."]
+    #[doc = ""]
+    #[doc = " @return The current time in microseconds according to the FPGA (since FPGA"]
+    #[doc = " reset) as a 64 bit number."]
+    pub fn HAL_ExpandFPGATime(unexpanded_lower: u32, status: *mut i32) -> u64;
+}
+extern "C" {
     #[doc = " Call this to start up HAL. This is required for robot programs."]
     #[doc = ""]
     #[doc = " This must be called before any other HAL functions. Failure to do so will"]
@@ -2735,21 +2973,6 @@ extern "C" {
     #[doc = " @param mode    the initialization mode (see remarks)"]
     #[doc = " @return        true if initialization was successful, otherwise false."]
     pub fn HAL_Initialize(timeout: i32, mode: i32) -> HAL_Bool;
-}
-extern "C" {
-    #[doc = " Reports a hardware usage to the HAL."]
-    #[doc = ""]
-    #[doc = " @param resource       the used resource"]
-    #[doc = " @param instanceNumber the instance of the resource"]
-    #[doc = " @param context        a user specified context index"]
-    #[doc = " @param feature        a user specified feature string"]
-    #[doc = " @return               the index of the added value in NetComm"]
-    pub fn HAL_Report(
-        resource: i32,
-        instanceNumber: i32,
-        context: i32,
-        feature: *const ::std::os::raw::c_char,
-    ) -> i64;
 }
 pub mod HAL_I2CPort {
     #[doc = " @defgroup hal_i2c I2C Functions"]
@@ -3025,6 +3248,17 @@ extern "C" {
     pub fn HAL_InitializeNotifier(status: *mut i32) -> HAL_NotifierHandle;
 }
 extern "C" {
+    #[doc = " Sets the name of a notifier."]
+    #[doc = ""]
+    #[doc = " @param notifierHandle the notifier handle"]
+    #[doc = " @param name name"]
+    pub fn HAL_SetNotifierName(
+        notifierHandle: HAL_NotifierHandle,
+        name: *const ::std::os::raw::c_char,
+        status: *mut i32,
+    );
+}
+extern "C" {
     #[doc = " Stops a notifier from running."]
     #[doc = ""]
     #[doc = " This will cause any call into HAL_WaitForNotifierAlarm to return."]
@@ -3119,6 +3353,19 @@ extern "C" {
     #[doc = " @param channel the channel"]
     #[doc = " @return        the channel current (amps)"]
     pub fn HAL_GetPDPChannelCurrent(handle: HAL_PDPHandle, channel: i32, status: *mut i32) -> f64;
+}
+extern "C" {
+    #[doc = " Gets the current of all 16 channels on the PDP."]
+    #[doc = ""]
+    #[doc = " The array must be large enough to hold all channels."]
+    #[doc = ""]
+    #[doc = " @param handle the module handle"]
+    #[doc = " @param current the currents (output)"]
+    pub fn HAL_GetPDPAllChannelCurrents(
+        handle: HAL_PDPHandle,
+        currents: *mut f64,
+        status: *mut i32,
+    );
 }
 extern "C" {
     #[doc = " Gets the total current of the PDP."]
@@ -3469,6 +3716,18 @@ extern "C" {
     #[doc = ""]
     #[doc = " @return the number of PDP channels"]
     pub fn HAL_GetNumPDPChannels() -> i32;
+}
+extern "C" {
+    #[doc = " Gets the number of duty cycle inputs in the current system."]
+    #[doc = ""]
+    #[doc = " @return the number of Duty Cycle inputs"]
+    pub fn HAL_GetNumDutyCycles() -> i32;
+}
+extern "C" {
+    #[doc = " Gets the number of addressable LED generators in the current system."]
+    #[doc = ""]
+    #[doc = " @return the number of Addressable LED generators"]
+    pub fn HAL_GetNumAddressableLEDs() -> i32;
 }
 extern "C" {
     #[doc = " Gets the roboRIO input voltage."]
@@ -4341,139 +4600,4 @@ impl Default for HAL_Value {
     fn default() -> Self {
         unsafe { ::std::mem::zeroed() }
     }
-}
-pub mod HALUsageReporting_tResourceType {
-    pub type Type = u32;
-    pub const Controller: Type = 0;
-    pub const Module: Type = 1;
-    pub const Language: Type = 2;
-    pub const CANPlugin: Type = 3;
-    pub const Accelerometer: Type = 4;
-    pub const ADXL345: Type = 5;
-    pub const AnalogChannel: Type = 6;
-    pub const AnalogTrigger: Type = 7;
-    pub const AnalogTriggerOutput: Type = 8;
-    pub const CANJaguar: Type = 9;
-    pub const Compressor: Type = 10;
-    pub const Counter: Type = 11;
-    pub const Dashboard: Type = 12;
-    pub const DigitalInput: Type = 13;
-    pub const DigitalOutput: Type = 14;
-    pub const DriverStationCIO: Type = 15;
-    pub const DriverStationEIO: Type = 16;
-    pub const DriverStationLCD: Type = 17;
-    pub const Encoder: Type = 18;
-    pub const GearTooth: Type = 19;
-    pub const Gyro: Type = 20;
-    pub const I2C: Type = 21;
-    pub const Framework: Type = 22;
-    pub const Jaguar: Type = 23;
-    pub const Joystick: Type = 24;
-    pub const Kinect: Type = 25;
-    pub const KinectStick: Type = 26;
-    pub const PIDController: Type = 27;
-    pub const Preferences: Type = 28;
-    pub const PWM: Type = 29;
-    pub const Relay: Type = 30;
-    pub const RobotDrive: Type = 31;
-    pub const SerialPort: Type = 32;
-    pub const Servo: Type = 33;
-    pub const Solenoid: Type = 34;
-    pub const SPI: Type = 35;
-    pub const Task: Type = 36;
-    pub const Ultrasonic: Type = 37;
-    pub const Victor: Type = 38;
-    pub const Button: Type = 39;
-    pub const Command: Type = 40;
-    pub const AxisCamera: Type = 41;
-    pub const PCVideoServer: Type = 42;
-    pub const SmartDashboard: Type = 43;
-    pub const Talon: Type = 44;
-    pub const HiTechnicColorSensor: Type = 45;
-    pub const HiTechnicAccel: Type = 46;
-    pub const HiTechnicCompass: Type = 47;
-    pub const SRF08: Type = 48;
-    pub const AnalogOutput: Type = 49;
-    pub const VictorSP: Type = 50;
-    pub const PWMTalonSRX: Type = 51;
-    pub const CANTalonSRX: Type = 52;
-    pub const ADXL362: Type = 53;
-    pub const ADXRS450: Type = 54;
-    pub const RevSPARK: Type = 55;
-    pub const MindsensorsSD540: Type = 56;
-    pub const DigitalGlitchFilter: Type = 57;
-    pub const ADIS16448: Type = 58;
-    pub const PDP: Type = 59;
-    pub const PCM: Type = 60;
-    pub const PigeonIMU: Type = 61;
-    pub const NidecBrushless: Type = 62;
-    pub const CANifier: Type = 63;
-    pub const CTRE_future0: Type = 64;
-    pub const CTRE_future1: Type = 65;
-    pub const CTRE_future2: Type = 66;
-    pub const CTRE_future3: Type = 67;
-    pub const CTRE_future4: Type = 68;
-    pub const CTRE_future5: Type = 69;
-    pub const CTRE_future6: Type = 70;
-    pub const LinearFilter: Type = 71;
-    pub const XboxController: Type = 72;
-    pub const UsbCamera: Type = 73;
-    pub const NavX: Type = 74;
-    pub const Pixy: Type = 75;
-    pub const Pixy2: Type = 76;
-    pub const ScanseSweep: Type = 77;
-    pub const Shuffleboard: Type = 78;
-    pub const CAN: Type = 79;
-    pub const DigilentDMC60: Type = 80;
-    pub const PWMVictorSPX: Type = 81;
-    pub const RevSparkMaxPWM: Type = 82;
-    pub const RevSparkMaxCAN: Type = 83;
-    pub const ADIS16470: Type = 84;
-}
-pub mod HALUsageReporting_tInstances {
-    pub type Type = u32;
-    pub const kLanguage_LabVIEW: Type = 1;
-    pub const kLanguage_CPlusPlus: Type = 2;
-    pub const kLanguage_Java: Type = 3;
-    pub const kLanguage_Python: Type = 4;
-    pub const kLanguage_DotNet: Type = 5;
-    pub const kCANPlugin_BlackJagBridge: Type = 1;
-    pub const kCANPlugin_2CAN: Type = 2;
-    pub const kFramework_Iterative: Type = 1;
-    pub const kFramework_Simple: Type = 2;
-    pub const kFramework_CommandControl: Type = 3;
-    pub const kFramework_Timed: Type = 4;
-    pub const kFramework_ROS: Type = 5;
-    pub const kFramework_RobotBuilder: Type = 6;
-    pub const kRobotDrive_ArcadeStandard: Type = 1;
-    pub const kRobotDrive_ArcadeButtonSpin: Type = 2;
-    pub const kRobotDrive_ArcadeRatioCurve: Type = 3;
-    pub const kRobotDrive_Tank: Type = 4;
-    pub const kRobotDrive_MecanumPolar: Type = 5;
-    pub const kRobotDrive_MecanumCartesian: Type = 6;
-    pub const kRobotDrive2_DifferentialArcade: Type = 7;
-    pub const kRobotDrive2_DifferentialTank: Type = 8;
-    pub const kRobotDrive2_DifferentialCurvature: Type = 9;
-    pub const kRobotDrive2_MecanumCartesian: Type = 10;
-    pub const kRobotDrive2_MecanumPolar: Type = 11;
-    pub const kRobotDrive2_KilloughCartesian: Type = 12;
-    pub const kRobotDrive2_KilloughPolar: Type = 13;
-    pub const kDriverStationCIO_Analog: Type = 1;
-    pub const kDriverStationCIO_DigitalIn: Type = 2;
-    pub const kDriverStationCIO_DigitalOut: Type = 3;
-    pub const kDriverStationEIO_Acceleration: Type = 1;
-    pub const kDriverStationEIO_AnalogIn: Type = 2;
-    pub const kDriverStationEIO_AnalogOut: Type = 3;
-    pub const kDriverStationEIO_Button: Type = 4;
-    pub const kDriverStationEIO_LED: Type = 5;
-    pub const kDriverStationEIO_DigitalIn: Type = 6;
-    pub const kDriverStationEIO_DigitalOut: Type = 7;
-    pub const kDriverStationEIO_FixedDigitalOut: Type = 8;
-    pub const kDriverStationEIO_PWM: Type = 9;
-    pub const kDriverStationEIO_Encoder: Type = 10;
-    pub const kDriverStationEIO_TouchSlider: Type = 11;
-    pub const kADXL345_SPI: Type = 1;
-    pub const kADXL345_I2C: Type = 2;
-    pub const kCommand_Scheduler: Type = 1;
-    pub const kSmartDashboard_Instance: Type = 1;
 }

@@ -8,3 +8,4 @@ pub mod robot_base;
 pub mod robot_state;
 pub mod driverstation;
 pub mod fpga;
+pub mod joystick;
