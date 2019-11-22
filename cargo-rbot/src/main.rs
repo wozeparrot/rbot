@@ -11,7 +11,6 @@ use std::fs::File;
 use std::io::Write;
 use std::time::Duration;
 use std::process::exit;
-use std::path::*;
 use std::ffi::OsStr;
 use std::env;
 
@@ -99,9 +98,9 @@ fn create(name: &str, team: &str) {
     f.sync_all().unwrap();
 
     let mut f = File::create(format!("{}/{}/{}", name, "src", "main.rs")).expect("src/main.rs Creation Failed");
-    f.write_all(b"fn main() {").unwrap();
-    f.write_all(b"    println!(\"Hello rbot!\"))").unwrap();
-    f.write_all(b"}").unwrap();
+    f.write_all(b"fn main() {\n").unwrap();
+    f.write_all(b"    println!(\"Hello rbot!\");\n").unwrap();
+    f.write_all(b"}\n").unwrap();
 
     f.sync_all().unwrap();
 }
